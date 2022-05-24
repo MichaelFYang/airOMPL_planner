@@ -1,0 +1,12 @@
+<launch>
+    <arg name="odom_topic" default="/state_estimation"/>
+    <arg name="scan_cloud_topic" default="/rgbd_camera/depth/points"/>
+    <arg name="config" default="default"/>
+    <node pkg="air_ompl_planner" type="air_ompl_planner" name="air_ompl_planner" output="screen">
+        <rosparam command="load" file="$(find air_ompl_planner)/config/$(arg config).yaml" />
+        <remap from="/odom_world" to="$(arg odom_topic)"/> 
+        <remap from="/scan_cloud" to="$(arg scan_cloud_topic)"/>
+    </node>
+    <node type="rviz" name="far_rviz" pkg="rviz" args="-d $(find air_ompl_planner)/rviz/$(arg config).rviz" respawn="true"/>
+
+</launch>
