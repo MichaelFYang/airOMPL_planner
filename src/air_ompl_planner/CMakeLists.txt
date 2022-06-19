@@ -54,6 +54,7 @@ set(SOURCES ${SOURCES}
   src/map_handler.cpp
   src/air_planner.cpp
   src/utility.cpp
+  src/scan_handler.cpp
   src/planner_visualizer.cpp
 )
 

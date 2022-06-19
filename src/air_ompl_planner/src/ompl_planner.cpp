@@ -159,12 +159,12 @@ void OMPLPlanner::ExcuteOMPLPlanner(const Point3D& odom_pos, const Point3D& goal
     /* create different ompl planner instant */
 
     /* RRT* */
-    auto planner(std::make_shared<og::RRTstar>(si));
-    planner->setRange(ompl_params_.dstep);
+    // auto planner(std::make_shared<og::RRTstar>(si));
+    // planner->setRange(ompl_params_.dstep);
 
     /* RRT-Connect */
-    // auto planner(std::make_shared<og::RRTConnect>(si));
-    // planner->setRange(ompl_params_.dstep);
+    auto planner(std::make_shared<og::RRTConnect>(si));
+    planner->setRange(ompl_params_.dstep);
     
     /* BITStar */
     // auto planner(std::make_shared<og::BITstar>(si));

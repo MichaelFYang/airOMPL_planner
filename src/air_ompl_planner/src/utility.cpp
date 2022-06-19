@@ -33,6 +33,36 @@ void AOMPLUtil::ResetCloudIntensity(const PointCloudPtr& cloudIn, const bool isH
   }
 }
 
+void AOMPLUtil::InflateCloud(const PointCloudPtr& obsCloudInOut, 
+                           const float& resol,
+                           const int& inflate_size,
+                           const bool& deep_z_inflate) 
+{
+  const std::size_t current_size = obsCloudInOut->size();
+  const int z_size = deep_z_inflate ? inflate_size + 1 : inflate_size;
+  const std::size_t array_size = current_size * (pow(inflate_size*2+1, 2)*(z_size*2+1) + 1);
+  obsCloudInOut->resize(array_size);
+  std::size_t cur_idx = current_size;
+  for (std::size_t p_idx=0; p_idx<current_size; p_idx++) {
+    PCLPoint p = obsCloudInOut->points[p_idx];
+    for (int ix=-inflate_size; ix<=inflate_size; ix++) {
+      for (int iy=-inflate_size; iy<=inflate_size; iy++) {
+        for (int iz=-z_size; iz<=z_size; iz++) {
+          PCLPoint ref_p;
+          ref_p.x = p.x + ix * resol;
+          ref_p.y = p.y + iy * resol;
+          ref_p.z = p.z + iz * resol;
+          ref_p.intensity = p.intensity;
+          obsCloudInOut->points[cur_idx] = ref_p;
+          cur_idx ++;
+        }
+      }
+    }
+  }
+  obsCloudInOut->resize(cur_idx);
+  AOMPLUtil::FilterCloud(obsCloudInOut, resol);
+}
+
 geometry_msgs::Point AOMPLUtil::Point3DToGeoMsgPoint(const Point3D& point) {
   geometry_msgs::Point p;
   p.x = point.x;

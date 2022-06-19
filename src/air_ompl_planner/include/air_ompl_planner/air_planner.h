@@ -4,6 +4,7 @@
 #include "utility.h"
 #include "map_handler.h"
 #include "ompl_planner.h"
+#include "scan_handler.h"
 #include "planner_visualizer.h"
 
 
@@ -46,11 +47,13 @@ private:
     MapHandler map_handler_;
     DPVisualizer planner_viz_;
     OMPLPlanner ompl_planner_;
+    ScanHandler scan_handler_;
 
     /* ROS Params */
-    PlannerMasterParams    master_params_;
-    MapHandlerParams    map_params_;
-    OMPLPlannerParams   ompl_params_;
+    PlannerMasterParams master_params_;
+    MapHandlerParams map_params_;
+    OMPLPlannerParams ompl_params_;
+    ScanHandlerParams scan_params_;
     
     /* Path Value */
     PointStack execute_path, current_path;
@@ -64,6 +67,10 @@ private:
     bool ProcessCloud(const sensor_msgs::PointCloud2ConstPtr& pc, const PointCloudPtr& cloudOut);
 
     void PublishWaypointMsg(const Point3D& goal_pos_);
+
+    void ExtractDynamicObsFromScan(const PointCloudPtr& scanCloudIn, 
+                                   const PointCloudPtr& obsCloudIn,
+                                   const PointCloudPtr& dyObsCloudOut);
 
     /* Callback Functions */
     void OdomCallBack(const nav_msgs::OdometryConstPtr& msg);

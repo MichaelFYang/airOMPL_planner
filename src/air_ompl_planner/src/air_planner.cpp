@@ -21,6 +21,7 @@ void PlannerMaster::Init() {
   map_handler_.Init(map_params_);
   ompl_planner_.Init(ompl_params_);
   planner_viz_.Init(nh);
+  scan_handler_.Init(scan_params_);
 
   /* init internal params */
   is_cloud_init_      = false;
@@ -94,6 +95,7 @@ void PlannerMaster::LoadROSParams() {
   nh.param<float>(master_prefix + "visualize_ratio",   master_params_.viz_ratio, 1.0);
   nh.param<float>(master_prefix + "main_run_freq",     master_params_.main_run_freq, 2.0);
   nh.param<float>(master_prefix + "ceil_height",       master_params_.ceil_height, 2.0);
+  nh.param<bool>(master_prefix +  "is_static_env",     master_params_.is_static_env, true);
   nh.param<std::string>(master_prefix + "world_frame", master_params_.world_frame, "map");
 
     // ompl planner params
@@ -117,6 +119,11 @@ void PlannerMaster::LoadROSParams() {
   AOMPLUtil::kSensorRange = master_params_.sensor_range;
   AOMPLUtil::kVizRatio = master_params_.viz_ratio;
   AOMPLUtil::worldFrameId = master_params_.world_frame;
+
+  // scan handler params
+  scan_params_.terrain_range = master_params_.sensor_range;
+  scan_params_.voxel_size    = master_params_.voxel_dim;
+  scan_params_.ceil_height   = map_params_.ceil_height;
 }
 
 void PlannerMaster::OdomCallBack(const nav_msgs::OdometryConstPtr& msg) {
@@ -189,6 +196,15 @@ bool PlannerMaster::ProcessCloud(const sensor_msgs::PointCloud2ConstPtr& pc,
   return true;
 }
 
+void PlannerMaster::ExtractDynamicObsFromScan(const PointCloudPtr& scanCloudIn, 
+                                              const PointCloudPtr& obsCloudIn,
+                                              const PointCloudPtr& dyObsCloudOut)
+{
+  scan_handler_.ReInitGrids();
+  scan_handler_.SetCurrentScanCloud(scanCloudIn);
+  scan_handler_.ExtractDyObsCloud(obsCloudIn, dyObsCloudOut);
+}
+
 void PlannerMaster::ScanCallBack(const sensor_msgs::PointCloud2ConstPtr& pc) {
   if (!is_odom_init_) return;
   // update map grid robot center
@@ -197,9 +213,9 @@ void PlannerMaster::ScanCallBack(const sensor_msgs::PointCloud2ConstPtr& pc) {
     return;
   }
   // extract new points
-  AOMPLUtil::ExtractNewObsPointCloud(temp_cloud_ptr_,
-                                    AOMPLUtil::surround_obs_cloud_,
-                                    AOMPLUtil::cur_new_cloud_);
+  AOMPLUtil::ExtractNewObsPointCloud(temp_cloud_ptr_,                  // curnent scan cloud
+                                     AOMPLUtil::surround_obs_cloud_,
+                                     AOMPLUtil::cur_new_cloud_);
   
   map_handler_.UpdateObsCloudGrid(AOMPLUtil::cur_new_cloud_);
 
@@ -208,6 +224,25 @@ void PlannerMaster::ScanCallBack(const sensor_msgs::PointCloud2ConstPtr& pc) {
   ROS_INFO_STREAM("size of cloud: "<<AOMPLUtil::surround_obs_cloud_->size());
 
   if (!AOMPLUtil::surround_obs_cloud_->empty()) is_cloud_init_ = true;
+
+  /* Extract Dynamic Obs in Cloud */
+  if (!master_params_.is_static_env) {
+    this->ExtractDynamicObsFromScan(temp_cloud_ptr_, 
+                                    AOMPLUtil::surround_obs_cloud_,
+                                    AOMPLUtil::cur_dyobs_cloud_);
+
+    if (AOMPLUtil::cur_dyobs_cloud_->size() > 5) {
+      ROS_WARN("Dynamic Obstacle Detected, removing from map...");
+      AOMPLUtil::InflateCloud(AOMPLUtil::cur_dyobs_cloud_, master_params_.voxel_dim, 1, true);
+      map_handler_.RemoveObsCloudFromGrid(AOMPLUtil::cur_dyobs_cloud_);
+
+      AOMPLUtil::RemoveOverlapCloud(AOMPLUtil::surround_obs_cloud_, AOMPLUtil::cur_dyobs_cloud_);
+      AOMPLUtil::FilterCloud(AOMPLUtil::cur_dyobs_cloud_, master_params_.voxel_dim);
+      // update new cloud
+      *AOMPLUtil::cur_new_cloud_ += *AOMPLUtil::cur_dyobs_cloud_;
+      AOMPLUtil::FilterCloud(AOMPLUtil::cur_new_cloud_, master_params_.voxel_dim);
+    }
+  }
 
   /* visualize clouds */
   planner_viz_.VizPointCloud(surround_obs_debug_,  AOMPLUtil::surround_obs_cloud_);
@@ -242,6 +277,7 @@ void PlannerMaster::PublishWaypointMsg(const Point3D& goal_pos_) {
 /* allocate static utility PointCloud pointer memory */
 PointCloudPtr  AOMPLUtil::surround_obs_cloud_  = PointCloudPtr(new pcl::PointCloud<PCLPoint>());
 PointCloudPtr  AOMPLUtil::cur_new_cloud_       = PointCloudPtr(new pcl::PointCloud<PCLPoint>());
+PointCloudPtr  AOMPLUtil::cur_dyobs_cloud_     = PointCloudPtr(new pcl::PointCloud<PCLPoint>());
 /* init static utility values */
 const float AOMPLUtil::kEpsilon = 1e-7;
 const float AOMPLUtil::kINF     = std::numeric_limits<float>::max();

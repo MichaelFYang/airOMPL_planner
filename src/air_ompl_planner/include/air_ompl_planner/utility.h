@@ -66,6 +66,7 @@ public:
     static int kCollideN;
     static std::string worldFrameId;
 
+    static PointCloudPtr cur_dyobs_cloud_;
     static PointCloudPtr surround_obs_cloud_;   // surround obstacle cloud
     static PointCloudPtr cur_new_cloud_;
 
@@ -102,6 +103,11 @@ public:
         }
     }
 
+    template <typename _T>
+    static int Signum(const _T x) {
+        return x == 0 ? 0 : x < 0 ? -1 : 1;
+    }
+
     static void RemoveOverlapCloud(const PointCloudPtr& cloudInOut,
                                    const PointCloudPtr& cloudRef,
                                    const bool& is_copy_cloud=false);
@@ -114,6 +120,11 @@ public:
     static bool IsSameFrameID(const std::string& cur_frame, const std::string& ref_frame);
 
     static void ResetCloudIntensity(const PointCloudPtr& cloudIn, const bool isHigh);
+
+    static void InflateCloud(const PointCloudPtr& obsCloudInOut,
+                             const float& resol,
+                             const int& inflate_size,
+                             const bool& deep_z_inflate);
 
     static void ExtractNewObsPointCloud(const PointCloudPtr& cloudIn,
                                         const PointCloudPtr& cloudRefer,

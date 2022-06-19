@@ -4,7 +4,8 @@ voxel_dim                               : 0.15  # Unit: meter
 robot_dim                               : 0.6   # Unit: meter
 sensor_range                            : 10.0  # Unit: meter
 visualize_ratio                         : 0.5
-ceil_height                             : 5.0  # Unit: meter
+ceil_height                             : 5.0   # Unit: meter
+is_static_env                           : false
 world_frame                             : map
 
 # Map Handler Params
