@@ -52,6 +52,7 @@ airOMPL Planner settings are kept in default.yaml in the 'src/air_ompl_planner/c
 - *voxel_dim* (default: 0.15 (m)) - voxel size for point cloud downsizing
 - *sensor_range* (default: 10.0 (m)) - sensor obstacle detection range
 - *ceil_height* (default: 5.0 (m)) - maximum fly height
+- *is_static_env* (default: true) - set to false if the environment contains dynamic obstacles.
 
 ## Advanced
 
