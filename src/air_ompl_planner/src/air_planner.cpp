@@ -207,8 +207,10 @@ void PlannerMaster::ExtractDynamicObsFromScan(const PointCloudPtr& scanCloudIn,
 
 void PlannerMaster::ScanCallBack(const sensor_msgs::PointCloud2ConstPtr& pc) {
   if (!is_odom_init_) return;
-  // update map grid robot center
+  // update map grid and scan handler robot center
   map_handler_.UpdateRobotPosition(robot_pos_);
+  scan_handler_.UpdateRobotPosition(robot_pos_);
+
   if (!this->ProcessCloud(pc, temp_cloud_ptr_)) {
     return;
   }
@@ -235,9 +237,7 @@ void PlannerMaster::ScanCallBack(const sensor_msgs::PointCloud2ConstPtr& pc) {
       ROS_WARN("Dynamic Obstacle Detected, removing from map...");
       AOMPLUtil::InflateCloud(AOMPLUtil::cur_dyobs_cloud_, master_params_.voxel_dim, 1, true);
       map_handler_.RemoveObsCloudFromGrid(AOMPLUtil::cur_dyobs_cloud_);
-
       AOMPLUtil::RemoveOverlapCloud(AOMPLUtil::surround_obs_cloud_, AOMPLUtil::cur_dyobs_cloud_);
-      AOMPLUtil::FilterCloud(AOMPLUtil::cur_dyobs_cloud_, master_params_.voxel_dim);
       // update new cloud
       *AOMPLUtil::cur_new_cloud_ += *AOMPLUtil::cur_dyobs_cloud_;
       AOMPLUtil::FilterCloud(AOMPLUtil::cur_new_cloud_, master_params_.voxel_dim);

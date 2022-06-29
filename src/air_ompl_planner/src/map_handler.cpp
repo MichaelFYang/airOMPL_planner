@@ -185,16 +185,27 @@ void MapHandler::GetOccupancyCeilsCenters(PointStack& occupancy_centers) {
 void MapHandler::RemoveObsCloudFromGrid(const PointCloudPtr& obsCloud) {
     std::fill(util_remove_check_list_.begin(), util_remove_check_list_.end(), 0);
     for (const auto& point : obsCloud->points) {
-        Eigen::Vector3i sub = world_obs_cloud_grid_->Pos2Sub(Eigen::Vector3d(point.x, point.y, point.z));
-        if (!world_obs_cloud_grid_->InRange(sub)) continue;
-        const int ind = world_obs_cloud_grid_->Sub2Ind(sub);
-        util_remove_check_list_[ind] = 1;
+        Eigen::Vector3i flag_vec;
+        Eigen::Vector3i c_sub = world_obs_cloud_grid_->Pos2SubExtend(Eigen::Vector3d(point.x, point.y, point.z), map_params_.margin_d, flag_vec);
+        if (!world_obs_cloud_grid_->InRange(c_sub)) continue;
+        const int c_ind = world_obs_cloud_grid_->Sub2Ind(c_sub);
+        util_remove_check_list_[c_ind] = 1;
+        for (int i = 0; i < 3; i++) {
+            if (flag_vec(i) != 0) {
+                Eigen::Vector3i extend_sub = c_sub;
+                extend_sub(i) += flag_vec(i);
+                if (world_obs_cloud_grid_->InRange(extend_sub)) {
+                    const int extend_ind = world_obs_cloud_grid_->Sub2Ind(extend_sub);
+                    util_remove_check_list_[extend_ind] = 1;
+                }
+            }
+        }
     }
     for (const auto& ind : neighbor_obs_indices_) {
         if (util_remove_check_list_[ind] == 1 && global_visited_induces_[ind] == 1) {
             AOMPLUtil::RemoveOverlapCloud(world_obs_cloud_grid_->GetCell(ind).cloud_ptr, obsCloud);
             AOMPLUtil::UpdateKdTreeWithCloud(world_obs_cloud_grid_->GetCell(ind).cloud_ptr,
-                                            world_obs_cloud_grid_->GetCell(ind).kdtree_ptr);
+                                             world_obs_cloud_grid_->GetCell(ind).kdtree_ptr);
         }
     }
 }

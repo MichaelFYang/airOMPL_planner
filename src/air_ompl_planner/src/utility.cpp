@@ -85,8 +85,8 @@ void AOMPLUtil::ClearKdTree(const PointKdTreePtr& kdTree_ptr) {
 }
 
 void AOMPLUtil::RemoveOverlapCloud(const PointCloudPtr& cloudInOut,
-                                  const PointCloudPtr& cloudRef,
-                                  const bool& is_copy_cloud) 
+                                   const PointCloudPtr& cloudRef,
+                                   const bool& is_copy_cloud) 
 {
   if (cloudRef->empty() || cloudInOut->empty()) return;
   PointCloudPtr temp_cloud(new pcl::PointCloud<PCLPoint>());
@@ -99,7 +99,7 @@ void AOMPLUtil::RemoveOverlapCloud(const PointCloudPtr& cloudInOut,
   AOMPLUtil::ResetCloudIntensity(cloudInOut, true);
   AOMPLUtil::ResetCloudIntensity(ref_cloud, false);
   *temp_cloud = *cloudInOut + *ref_cloud;
-  const float leaf_size = AOMPLUtil::kLeafSize * 1.2;
+  const float leaf_size = AOMPLUtil::kLeafSize * 1.1;
   AOMPLUtil::FilterCloud(temp_cloud, leaf_size);
   cloudInOut->clear(), cloudInOut->resize(temp_cloud->size());
   std::size_t idx = 0;
